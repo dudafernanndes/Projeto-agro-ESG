@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: ./vits-agrochain
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:oracle:thin:@//oracle.fiap.com.br:1521/ORCL
+      SPRING_DATASOURCE_USERNAME: rm560077
+      SPRING_DATASOURCE_PASSWORD: 300903
+    ports:
+      - "8080:8080"
+
+

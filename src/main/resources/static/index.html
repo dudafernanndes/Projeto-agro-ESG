@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vits AgroChain</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-leaf"></i> Vits AgroChain
+            </div>
+            <div class="nav-menu">
+                <a href="#" onclick="navigate('home')">Home</a>
+                <a href="#" id="nav-login" onclick="navigate('login')">Login</a>
+                <a href="#" id="nav-register" onclick="navigate('register')">Registrar</a>
+                <a href="#" id="nav-dashboard" class="hidden" onclick="navigate('dashboard')">Painel</a>
+                <a href="#" id="nav-logout" class="hidden" onclick="logout()">Sair</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container">
+        
+        <!-- Alerts -->
+        <div id="alert-container"></div>
+
+        <!-- Section: Home -->
+        <section id="sec-home" class="section">
+            <div class="hero">
+                <h1>Rastreabilidade Inteligente para o Agronegócio</h1>
+                <p>O Vits AgroChain gerencia suas certificações, lotes e propriedades de forma segura e transparente, garantindo confiança em toda a cadeia produtiva.</p>
+                <button class="btn btn-primary" onclick="navigate('register')">Começar Agora</button>
+            </div>
+            
+            <div class="features">
+                <div class="card feature-card">
+                    <i class="fas fa-boxes"></i>
+                    <h3>Lotes Seguros</h3>
+                    <p>Acompanhe todos os detalhes de produção dos seus lotes agrícolas em tempo real.</p>
+                </div>
+                <div class="card feature-card">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <h3>Propriedades</h3>
+                    <p>Monitore diferentes unidades, suas áreas, limites e especificações com facilidade.</p>
+                </div>
+                <div class="card feature-card">
+                    <i class="fas fa-certificate"></i>
+                    <h3>Certificações</h3>
+                    <p>Mantenha sempre válidas e visíveis as certificações e selos de qualidade dos negócios.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Login -->
+        <section id="sec-login" class="section hidden">
+            <div class="card form-card">
+                <h2>Acesse sua Conta</h2>
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                    <div class="input-group">
+                        <label>Email</label>
+                        <i class="fas fa-envelope icon"></i>
+                        <input type="email" id="loginEmail" placeholder="seu@email.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Senha</label>
+                        <i class="fas fa-lock icon"></i>
+                        <input type="password" id="loginPassword" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+                </form>
+                <p class="text-center mt-3">Ainda não tem conta? <a href="#" onclick="navigate('register')">Cadastre-se</a></p>
+            </div>
+        </section>
+
+        <!-- Section: Register -->
+        <section id="sec-register" class="section hidden">
+            <div class="card form-card">
+                <h2>Crie sua Conta</h2>
+                <form id="registerForm" onsubmit="handleRegister(event)">
+                    <div class="input-group">
+                        <label>Nome Completo</label>
+                        <i class="fas fa-user icon"></i>
+                        <input type="text" id="registerName" placeholder="João Silva" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Email</label>
+                        <i class="fas fa-envelope icon"></i>
+                        <input type="email" id="registerEmail" placeholder="seu@email.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Senha</label>
+                        <i class="fas fa-lock icon"></i>
+                        <input type="password" id="registerPassword" minlength="6" placeholder="Mínimo 6 caracteres" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Criar Conta</button>
+                </form>
+                <p class="text-center mt-3">Já possui conta? <a href="#" onclick="navigate('login')">Acesse aqui</a></p>
+            </div>
+        </section>
+
+        <!-- Section: Dashboard -->
+        <section id="sec-dashboard" class="section hidden">
+            <div class="dashboard-header">
+                <h2>Olá, <span id="userNameDisplay">Visitante</span>!</h2>
+                <p>Aqui você gerencia todo o seu ecossistema agrícola.</p>
+            </div>
+            
+            <div class="dashboard-grid">
+                <div class="card dash-card" onclick="openModule('properties')">
+                    <div class="dash-icon"><i class="fas fa-map-marked-alt"></i></div>
+                    <h3>Propriedades</h3>
+                    <p>Controle de terras</p>
+                </div>
+                
+                <div class="card dash-card" onclick="openModule('lots')">
+                    <div class="dash-icon"><i class="fas fa-boxes"></i></div>
+                    <h3>Lotes</h3>
+                    <p>Produções e plantios</p>
+                </div>
+
+                <div class="card dash-card" onclick="openModule('cultures')">
+                    <div class="dash-icon"><i class="fas fa-seedling"></i></div>
+                    <h3>Culturas</h3>
+                    <p>Gestão de sementes</p>
+                </div>
+
+                <div class="card dash-card" onclick="openModule('certifications')">
+                    <div class="dash-icon"><i class="fas fa-award"></i></div>
+                    <h3>Certificados</h3>
+                    <p>Compliance e selos</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Submodules (List viewer) -->
+        <section id="sec-module" class="section hidden">
+            <div class="module-header card">
+                <button class="btn btn-secondary btn-sm" onclick="navigate('dashboard')">
+                    <i class="fas fa-arrow-left"></i> Voltar ao Painel
+                </button>
+                <h2 id="moduleTitle">Módulo</h2>
+            </div>
+            
+            <div class="card mt-3">
+                <div id="moduleContent" class="list-wrapper">
+                    <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Carregando dados...</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 Vits AgroChain. Garantindo um futuro mais verde e tecnológico.</p>
+    </footer>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

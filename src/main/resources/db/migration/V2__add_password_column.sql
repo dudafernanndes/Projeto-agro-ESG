@@ -1,0 +1,3 @@
+-- V2__add_password_column.sql
+-- No-op: password column merged into initial migration (V1)
+-- This file is intentionally left as a no-op to preserve Flyway history.
