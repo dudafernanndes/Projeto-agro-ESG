@@ -13,6 +13,9 @@ jobs:
     env:
       AZURE_WEBAPP_NAME: agro-api-ESG
       JAR_NAME: vits-agrochain-0.0.1-SNAPSHOT.jar
+      SPRING_DATASOURCE_URL: ${{ secrets.SPRING_DATASOURCE_URL }}
+      SPRING_DATASOURCE_USERNAME: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
+      SPRING_DATASOURCE_PASSWORD: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
 
     steps:
       - name: Checkout repository
