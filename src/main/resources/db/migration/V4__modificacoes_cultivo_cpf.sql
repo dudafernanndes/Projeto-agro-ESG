@@ -1,18 +1,4 @@
-CREATE SEQUENCE SEQ_EVENTO_CULTIVO START WITH 1 INCREMENT BY 1 NOCACHE;
-
-ALTER TABLE VITS_ORC_USUARIO ADD vits_cpf_usuario VARCHAR2(14);
-ALTER TABLE VITS_ORC_USUARIO ADD CONSTRAINT UK_USUARIO_CPF UNIQUE (vits_cpf_usuario);
-
-ALTER TABLE VITS_ORC_LOTE ADD vits_producao_estimada NUMBER;
-ALTER TABLE VITS_ORC_LOTE ADD vits_custo_estimado NUMBER;
-ALTER TABLE VITS_ORC_LOTE ADD vits_preco_venda NUMBER;
-
-CREATE TABLE VITS_ORC_EVENTO_CULTIVO (
-    vits_id_evento NUMBER PRIMARY KEY,
-    vits_id_lote NUMBER NOT NULL,
-    vits_data_plantio DATE NOT NULL,
-    vits_data_colheita_est DATE NOT NULL,
-    vits_tipo_evento VARCHAR2(50) NOT NULL,
-    vits_descricao_evento VARCHAR2(500),
-    CONSTRAINT FK_LOTE_EVENTO FOREIGN KEY (vits_id_lote) REFERENCES VITS_ORC_LOTE (vits_id_lote)
-);
+-- V4__modificacoes_cultivo_cpf.sql
+-- No-op: this migration was Oracle-specific (VITS_ORC_* tables / sequences).
+-- The current schema is created in V1 for USUARIOS_VITS/LOTES/EVENTOS_CULTIVO/SIMULACOES.
+-- This file is intentionally left as a no-op to preserve Flyway history.

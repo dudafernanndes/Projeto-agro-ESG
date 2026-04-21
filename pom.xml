@@ -36,10 +36,10 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.oracle.database.jdbc</groupId>
-			<artifactId>ojdbc8</artifactId>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
-			<version>21.9.0.0</version>
+			<version>42.6.0</version>
 		</dependency>
 
 		<dependency>
@@ -103,11 +103,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.flywaydb</groupId>
-			<artifactId>flyway-database-oracle</artifactId>
-		</dependency>
-
-		<dependency>
 			<groupId>com.google.zxing</groupId>
 			<artifactId>core</artifactId>
 			<version>3.5.3</version>
@@ -156,10 +151,10 @@
 				<artifactId>flyway-maven-plugin</artifactId>
 				<version>10.10.0</version>
 				<configuration>
-					<driver>oracle.jdbc.OracleDriver</driver>
-					<url>jdbc:oracle:thin:@//oracle.fiap.com.br:1521/ORCL</url>
-					<user>rm560077</user>
-					<password>300903</password>
+					<driver>org.postgresql.Driver</driver>
+					<url>jdbc:postgresql://db:5432/postgres</url>
+					<user>postgres</user>
+					<password>postgres</password>
 					<baselineOnMigrate>true</baselineOnMigrate>
 					<baselineVersion>1</baselineVersion>
 					<locations>
@@ -169,9 +164,9 @@
 				</configuration>
 				<dependencies>
 					<dependency>
-						<groupId>com.oracle.database.jdbc</groupId>
-						<artifactId>ojdbc8</artifactId>
-						<version>21.9.0.0</version>
+						<groupId>org.postgresql</groupId>
+						<artifactId>postgresql</artifactId>
+						<version>42.6.0</version>
 					</dependency>
 				</dependencies>
 			</plugin>

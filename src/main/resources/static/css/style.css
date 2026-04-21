@@ -307,6 +307,52 @@ a:hover { text-decoration: underline; }
     margin: 0;
 }
 
+/* List wrapper (used for lists in modules) */
+.list-wrapper {
+    display: block;
+    margin-top: 1rem;
+}
+
+/* Lot detail & Events */
+#sec-lot-detail .form-card {
+    max-width: 900px;
+}
+
+#lotDetailTitle {
+    margin-top: 0.5rem;
+    color: var(--dark-bg);
+}
+
+#lotDetailMeta {
+    color: #7f8c8d;
+    margin-bottom: 1rem;
+}
+
+.events-list .event-card, #eventsList .card {
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.event-card-header {
+    display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;
+}
+
+.btn-info {
+    background: #3498db;
+    color: #fff;
+}
+.btn-info:hover { background: #297fb8; }
+
+/* Smaller card appearance for lists inside modules */
+#lotsList .card, #eventsList .card {
+    padding: 12px 16px;
+}
+
+/* Improve empty / error states spacing inside module cards */
+.list-wrapper .empty-state, .list-wrapper .error-state {
+    padding: 2rem;
+}
+
 /* Alerts System */
 #alert-container {
     position: fixed;

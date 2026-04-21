@@ -18,6 +18,7 @@
                 <a href="#" onclick="navigate('home')">Home</a>
                 <a href="#" id="nav-login" onclick="navigate('login')">Login</a>
                 <a href="#" id="nav-register" onclick="navigate('register')">Registrar</a>
+                <a href="#" id="nav-lots" onclick="navigate('lots')">Lotes</a>
                 <a href="#" id="nav-dashboard" class="hidden" onclick="navigate('dashboard')">Painel</a>
                 <a href="#" id="nav-logout" class="hidden" onclick="logout()">Sair</a>
             </div>
@@ -45,14 +46,14 @@
                     <p>Acompanhe todos os detalhes de produção dos seus lotes agrícolas em tempo real.</p>
                 </div>
                 <div class="card feature-card">
-                    <i class="fas fa-map-marked-alt"></i>
-                    <h3>Propriedades</h3>
-                    <p>Monitore diferentes unidades, suas áreas, limites e especificações com facilidade.</p>
+                    <i class="fas fa-boxes"></i>
+                    <h3>Gerencie Lotes</h3>
+                    <p>Cadastre lotes, registre eventos encadeados por lote e acompanhe produções.</p>
                 </div>
                 <div class="card feature-card">
-                    <i class="fas fa-certificate"></i>
-                    <h3>Certificações</h3>
-                    <p>Mantenha sempre válidas e visíveis as certificações e selos de qualidade dos negócios.</p>
+                    <i class="fas fa-chart-line"></i>
+                    <h3>Painel Básico</h3>
+                    <p>Visualização simples com métricas e lista de atividades recentes.</p>
                 </div>
             </div>
         </section>
@@ -94,6 +95,11 @@
                         <input type="email" id="registerEmail" placeholder="seu@email.com" required>
                     </div>
                     <div class="input-group">
+                        <label>CPF</label>
+                        <i class="fas fa-id-card icon"></i>
+                        <input type="text" id="registerCpf" placeholder="000.000.000-00" maxlength="14" required>
+                    </div>
+                    <div class="input-group">
                         <label>Senha</label>
                         <i class="fas fa-lock icon"></i>
                         <input type="password" id="registerPassword" minlength="6" placeholder="Mínimo 6 caracteres" required>
@@ -112,28 +118,16 @@
             </div>
             
             <div class="dashboard-grid">
-                <div class="card dash-card" onclick="openModule('properties')">
-                    <div class="dash-icon"><i class="fas fa-map-marked-alt"></i></div>
-                    <h3>Propriedades</h3>
-                    <p>Controle de terras</p>
-                </div>
-                
                 <div class="card dash-card" onclick="openModule('lots')">
                     <div class="dash-icon"><i class="fas fa-boxes"></i></div>
                     <h3>Lotes</h3>
-                    <p>Produções e plantios</p>
+                    <p>Produções e eventos</p>
                 </div>
 
-                <div class="card dash-card" onclick="openModule('cultures')">
-                    <div class="dash-icon"><i class="fas fa-seedling"></i></div>
-                    <h3>Culturas</h3>
-                    <p>Gestão de sementes</p>
-                </div>
-
-                <div class="card dash-card" onclick="openModule('certifications')">
-                    <div class="dash-icon"><i class="fas fa-award"></i></div>
-                    <h3>Certificados</h3>
-                    <p>Compliance e selos</p>
+                <div class="card dash-card" onclick="openModule('events')">
+                    <div class="dash-icon"><i class="fas fa-calendar-day"></i></div>
+                    <h3>Eventos</h3>
+                    <p>Visão geral dos eventos encadeados por lote</p>
                 </div>
             </div>
         </section>
@@ -151,6 +145,76 @@
                 <div id="moduleContent" class="list-wrapper">
                     <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Carregando dados...</div>
                 </div>
+            </div>
+        </section>
+
+        <!-- Section: Lots Management -->
+        <section id="sec-lots" class="section hidden">
+            <div class="card form-card">
+                <h2>Criar Lote</h2>
+                <form id="createLotForm" onsubmit="handleCreateLot(event)">
+                    <div class="input-group">
+                        <label>Nome do Lote</label>
+                        <input type="text" id="lotName" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Cultura</label>
+                        <input type="text" id="lotCulture" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Produção Total</label>
+                        <input type="number" step="0.01" id="lotProduction" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Custo Total</label>
+                        <input type="number" step="0.01" id="lotCost" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Preço de Venda</label>
+                        <input type="number" step="0.01" id="lotPrice" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Criar Lote</button>
+                </form>
+            </div>
+            <div class="card mt-3">
+                <h3>Lista de Lotes</h3>
+                <div id="lotsList" class="list-wrapper"></div>
+            </div>
+        </section>
+
+        <!-- Section: Lot Detail & Events -->
+        <section id="sec-lot-detail" class="section hidden">
+            <div class="card form-card">
+                <button class="btn btn-secondary btn-sm" onclick="navigate('lots')">
+                    <i class="fas fa-arrow-left"></i> Voltar aos Lotes
+                </button>
+                <h2 id="lotDetailTitle">Lote</h2>
+                <p id="lotDetailMeta"></p>
+                <hr />
+                <h3>Adicionar Evento</h3>
+                <form id="createEventForm" onsubmit="handleCreateEvent(event)">
+                    <div class="input-group">
+                        <label>Tipo de Evento</label>
+                        <input type="text" id="eventType" placeholder="Plantio, Adubação, Colheita..." required>
+                    </div>
+                    <div class="input-group">
+                        <label>Data do Evento (dataPlantio)</label>
+                        <input type="date" id="eventDate" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Data de Colheita Estimada (opcional)</label>
+                        <input type="date" id="eventEstimatedHarvestDate">
+                    </div>
+                    <div class="input-group">
+                        <label>Descrição</label>
+                        <input type="text" id="eventDescription" placeholder="Detalhes do evento">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Adicionar Evento</button>
+                </form>
+            </div>
+            <div class="card mt-3">
+                <h3>Eventos do Lote</h3>
+                <div id="eventsList" class="list-wrapper"></div>
             </div>
         </section>
 

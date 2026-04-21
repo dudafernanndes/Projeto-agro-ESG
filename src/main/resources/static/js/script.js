@@ -1,7 +1,14 @@
 // API Configuration
-const API_BASE_URL = 'http://localhost:8080';
+// Use o mesmo host/origem que serve o frontend por padrão (evita chamadas a domínios externos)
+const API_BASE_URL = window.location.origin;
 let authToken = localStorage.getItem('authToken');
 let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+
+function apiUrl(path) {
+    const base = API_BASE_URL.replace(/\/+$/, '');
+    const p = String(path || '').startsWith('/') ? String(path || '') : `/${path}`;
+    return `${base}${p}`;
+}
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
@@ -36,20 +43,26 @@ function navigate(section) {
     if (section === 'dashboard') {
         document.getElementById('userNameDisplay').textContent = currentUser?.name || 'Visitante';
     }
+    if (section === 'lots') {
+        loadLots();
+    }
 }
 
 function openModule(moduleName) {
     navigate('module');
     
     const titles = {
-        properties: 'Gerenciar Propriedades',
         lots: 'Gerenciar Lotes',
-        cultures: 'Gerenciar Culturas',
-        certifications: 'Certificações e Selos'
+        events: 'Eventos (visão geral)'
     };
 
     document.getElementById('moduleTitle').textContent = titles[moduleName] || 'Módulo';
     document.getElementById('moduleContent').innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Carregando dados...</div>';
+
+    if (moduleName === 'events') {
+        loadLotsForEventsModule();
+        return;
+    }
 
     // Chama a função de carregamento correspondente
     loadData(moduleName);
@@ -83,7 +96,7 @@ async function handleLogin(e) {
     const password = document.getElementById('loginPassword').value;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        const response = await fetch(apiUrl('/api/auth/login'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -116,13 +129,15 @@ async function handleRegister(e) {
     e.preventDefault();
     const name = document.getElementById('registerName').value;
     const email = document.getElementById('registerEmail').value;
+    const cpf = document.getElementById('registerCpf').value;
     const password = document.getElementById('registerPassword').value;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        const response = await fetch(apiUrl('/api/auth/register'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userName: name, email, password })
+            // Backend espera: nomeCompleto, email, cpf, senha
+            body: JSON.stringify({ nomeCompleto: name, email, cpf, senha: password })
         });
 
         if (!response.ok) throw new Error('Erro ao registrar usuário. Verifique os dados fornecidos.');
@@ -162,15 +177,22 @@ function logout() {
 // ----------------------------------------------------
 async function loadData(endpoint) {
     const container = document.getElementById('moduleContent');
+
+    const endpointMap = {
+        properties: 'properties',
+        lots: 'lotes'
+    };
+
+    const resolvedEndpoint = endpointMap[endpoint] || endpoint;
     
     try {
-        const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
+        const response = await fetch(apiUrl(`/${resolvedEndpoint}`), {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
 
         if (!response.ok) {
             if(response.status === 404) {
-                 throw new Error('Recurso não encontrado (Backend pode não ter a rota ' + endpoint + ' implementada).');
+                 throw new Error('Recurso não encontrado (Backend pode não ter a rota ' + resolvedEndpoint + ' implementada).');
             }
             throw new Error(`Erro ao carregar (Status ${response.status})`);
         }
@@ -208,18 +230,281 @@ async function loadData(endpoint) {
     }
 }
 
+async function loadLotsForEventsModule() {
+    const container = document.getElementById('moduleContent');
+    container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Carregando lotes...</div>';
+
+    try {
+        const res = await fetch(apiUrl('/lotes'));
+        if (!res.ok) throw new Error('Falha ao buscar lotes');
+        const lots = await res.json();
+
+        if (!lots || lots.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>Nenhum lote encontrado. Cadastre um lote primeiro.</p></div>';
+            return;
+        }
+
+        container.innerHTML = lots.map(l => `
+            <div class="card" style="margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <h4>${l.lote || 'Lote'}</h4>
+                        <small>${l.cultura || ''} — Status: ${l.status || ''}</small>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="openLotEvents(${l.id})">Registrar eventos</button>
+                    </div>
+                </div>
+                <p>Produção: ${l.producao ?? 'N/A'} — Custo: ${l.custo ?? 'N/A'} — Receita: ${l.receita ?? 'N/A'}</p>
+            </div>
+        `).join('');
+    } catch (err) {
+        container.innerHTML = `<div class="error-state"><p>${err.message}</p></div>`;
+    }
+}
+
+// Specialized loaders for Lots and Cultures
+async function loadLots() {
+    const container = document.getElementById('lotsList');
+    container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Carregando lotes...</div>';
+    try {
+        const res = await fetch(apiUrl('/lotes'));
+        if (!res.ok) throw new Error('Falha ao buscar lotes');
+        const data = await res.json();
+        renderLotsList(data);
+    } catch (err) {
+        container.innerHTML = `<div class="error-state"><p>${err.message}</p></div>`;
+    }
+}
+
+function renderLotsList(lots) {
+    const container = document.getElementById('lotsList');
+    if (!lots || lots.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>Nenhum lote encontrado.</p></div>';
+        return;
+    }
+    container.innerHTML = lots.map(l => `
+        <div class="card" style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <h4>${l.lote || 'Lote'}</h4>
+                    <small>${l.cultura || ''} — Status: ${l.status || ''}</small>
+                </div>
+                <div>
+                    <button class="btn btn-secondary" onclick="prefillEditLot(${l.id})">Editar</button>
+                    <button class="btn btn-info" onclick="openLotEvents(${l.id})">Eventos</button>
+                    <button class="btn" style="background:#e74c3c;color:#fff;" onclick="deleteLot(${l.id})">Excluir</button>
+                </div>
+            </div>
+            <p>Produção: ${l.producao ?? 'N/A'} — Custo: ${l.custo ?? 'N/A'} — Receita: ${l.receita ?? 'N/A'}</p>
+        </div>
+    `).join('');
+}
+
+async function handleCreateLot(e) {
+    e.preventDefault();
+    const payload = {
+        nomeLote: document.getElementById('lotName').value,
+        cultura: document.getElementById('lotCulture').value,
+        producaoTotal: parseFloat(document.getElementById('lotProduction').value),
+        custoTotal: parseFloat(document.getElementById('lotCost').value),
+        precoVenda: parseFloat(document.getElementById('lotPrice').value)
+    };
+    try {
+        const res = await fetch(apiUrl('/lotes'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('Erro ao criar lote');
+        document.getElementById('createLotForm').reset();
+        showSuccess('Lote criado com sucesso');
+        loadLots();
+    } catch (err) {
+        showError(err.message);
+    }
+}
+
+async function deleteLot(id) {
+    if (!confirm('Confirma exclusão do lote?')) return;
+    try {
+        const res = await fetch(apiUrl(`/lotes/${id}`), { method: 'DELETE' });
+        if (!res.ok) throw new Error('Erro ao excluir lote');
+        showSuccess('Lote removido');
+        loadLots();
+    } catch (err) {
+        showError(err.message);
+    }
+}
+
+async function prefillEditLot(id) {
+    try {
+        const res = await fetch(apiUrl(`/lotes/${id}`));
+        if (!res.ok) throw new Error('Não foi possível carregar lote');
+        const list = await res.json();
+        const data = Array.isArray(list) ? list[0] : list;
+        document.getElementById('lotName').value = data.lote || '';
+        document.getElementById('lotCulture').value = data.cultura || '';
+        document.getElementById('lotProduction').value = data.producao ?? '';
+        document.getElementById('lotCost').value = data.custo ?? '';
+        document.getElementById('lotPrice').value = data.precoVenda ?? data.receita ?? '';
+        const form = document.getElementById('createLotForm');
+        form.onsubmit = (ev) => handleUpdateLot(ev, id);
+    } catch (err) {
+        showError(err.message);
+    }
+}
+
+async function handleUpdateLot(e, id) {
+    e.preventDefault();
+    const payload = {
+        nomeLote: document.getElementById('lotName').value,
+        cultura: document.getElementById('lotCulture').value,
+        producaoTotal: parseFloat(document.getElementById('lotProduction').value),
+        custoTotal: parseFloat(document.getElementById('lotCost').value),
+        precoVenda: parseFloat(document.getElementById('lotPrice').value)
+    };
+    try {
+        // Try PUT; if API doesn't support it, fallback to POST
+        let res = await fetch(apiUrl(`/lotes/${id}`), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.status === 404 || res.status === 405) {
+            res = await fetch(apiUrl('/lotes'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        }
+        if (!res.ok) throw new Error('Erro ao atualizar lote');
+        document.getElementById('createLotForm').reset();
+        // restore handler
+        document.getElementById('createLotForm').onsubmit = (ev) => handleCreateLot(ev);
+        showSuccess('Lote atualizado');
+        loadLots();
+    } catch (err) {
+        showError(err.message);
+    }
+}
+
+// Cultures
+// Eventos (por lote)
+let currentLotId = null;
+
+function openLotEvents(lotId) {
+    currentLotId = lotId;
+    // carregar dados do lote (se possível)
+    navigate('lot-detail');
+    document.getElementById('lotDetailTitle').textContent = `Lote #${lotId}`;
+    document.getElementById('lotDetailMeta').textContent = `ID do lote: ${lotId}`;
+    document.getElementById('eventsList').innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Carregando eventos...</div>';
+    hydrateLotDetailHeader(lotId);
+    loadEvents(lotId);
+}
+
+async function hydrateLotDetailHeader(lotId) {
+    try {
+        const res = await fetch(apiUrl(`/lotes/${lotId}`));
+        if (!res.ok) return;
+        const list = await res.json();
+        const lot = Array.isArray(list) ? list[0] : list;
+        if (!lot) return;
+
+        document.getElementById('lotDetailTitle').textContent = lot.lote || `Lote #${lotId}`;
+        document.getElementById('lotDetailMeta').textContent = `${lot.cultura || ''} — Status: ${lot.status || ''}`;
+    } catch {
+        // ignore
+    }
+}
+
+async function loadEvents(lotId) {
+    try {
+        const res = await fetch(apiUrl(`/lotes/${lotId}/eventos`));
+        if (!res.ok) throw new Error('Falha ao carregar eventos');
+        const data = await res.json();
+        const events = Array.isArray(data) ? data : (data.content || data._embedded?.eventos || []);
+        renderEventsList(events);
+    } catch (err) {
+        document.getElementById('eventsList').innerHTML = `<div class="error-state"><p>${err.message}</p></div>`;
+    }
+}
+
+function toIsoLocalDateTimeAtStartOfDay(dateStr) {
+    // Backend espera LocalDateTime; recebemos YYYY-MM-DD do input date.
+    if (!dateStr) return null;
+    return `${dateStr}T00:00:00`;
+}
+
+function formatIsoToDate(iso) {
+    if (!iso) return '';
+    if (typeof iso === 'string' && iso.includes('T')) return iso.split('T')[0];
+    return String(iso);
+}
+
+function renderEventsList(events) {
+    const container = document.getElementById('eventsList');
+    if (!events || events.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>Nenhum evento registrado para este lote.</p></div>';
+        return;
+    }
+    container.innerHTML = events.map(ev => `
+        <div class="card" style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <h4>${ev.tipoEvento || 'Evento'}</h4>
+                    <small>
+                        Data: ${formatIsoToDate(ev.dataPlantio)}
+                        ${ev.dataColheitaEstimada ? ` — Colheita estimada: ${formatIsoToDate(ev.dataColheitaEstimada)}` : ''}
+                    </small>
+                </div>
+            </div>
+            <p>${ev.descricao || ''}</p>
+        </div>
+    `).join('');
+}
+
+async function handleCreateEvent(e) {
+    e.preventDefault();
+    if (!currentLotId) return showError('Lote não selecionado');
+
+    const plantingDate = toIsoLocalDateTimeAtStartOfDay(document.getElementById('eventDate').value);
+    const estimatedHarvestDate = toIsoLocalDateTimeAtStartOfDay(document.getElementById('eventEstimatedHarvestDate').value);
+
+    const payload = {
+        tipoEvento: document.getElementById('eventType').value,
+        descricao: document.getElementById('eventDescription').value || '',
+        dataPlantio: plantingDate
+    };
+    if (estimatedHarvestDate) payload.dataColheitaEstimada = estimatedHarvestDate;
+
+    try {
+        const res = await fetch(apiUrl(`/lotes/${currentLotId}/eventos`), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('Erro ao criar evento');
+        document.getElementById('createEventForm').reset();
+        showSuccess('Evento adicionado');
+        loadEvents(currentLotId);
+    } catch (err) {
+        showError(err.message);
+    }
+}
+
 // Utilidades para renderização dinâmica
 function getIconForModel(endpoint) {
     const icons = {
-        properties: 'fa-map',
         lots: 'fa-box',
-        cultures: 'fa-leaf',
-        certifications: 'fa-certificate'
+        events: 'fa-calendar'
     };
     return icons[endpoint] || 'fa-hashtag';
 }
 
 function extractName(item) {
+    if (item.lote) return item.lote;
     if (item.propertyName) return item.propertyName;
     if (item.lotNumber) return `Lote #${item.lotNumber}`;
     if (item.cultureName) return item.cultureName;
@@ -229,6 +514,7 @@ function extractName(item) {
 }
 
 function extractDetails(item) {
+    if (item.cultura || item.status) return `${item.cultura || ''} — Status: ${item.status || ''}`;
     if(item.totalArea) return `Área: ${item.totalArea}`;
     if(item.lotArea) return `Área: ${item.lotArea}`;
     if(item.descricao) return item.descricao;
