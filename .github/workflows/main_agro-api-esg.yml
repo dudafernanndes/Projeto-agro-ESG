@@ -35,26 +35,6 @@ jobs:
     - name: Build with Maven (skip tests)
       run: ./mvnw -B -DskipTests package
 
-    - name: Login to Azure (optional, for app settings)
-      if: ${{ secrets.AZURE_CREDENTIALS != '' && secrets.AZURE_RESOURCE_GROUP != '' }}
-      uses: azure/login@v2
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-    - name: Set Postgres env vars in Azure Web App (optional)
-      if: ${{ secrets.AZURE_CREDENTIALS != '' && secrets.AZURE_RESOURCE_GROUP != '' && secrets.POSTGRES_JDBC_URL != '' }}
-      uses: azure/cli@v2
-      with:
-        azcliversion: 2.60.0
-        inlineScript: |
-          az webapp config appsettings set \
-            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
-            --name "agro-api-ESG" \
-            --settings \
-              SPRING_DATASOURCE_URL="${{ secrets.POSTGRES_JDBC_URL }}" \
-              SPRING_DATASOURCE_USERNAME="${{ secrets.POSTGRES_USERNAME }}" \
-              SPRING_DATASOURCE_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
-
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
       with: 
