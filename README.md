@@ -14,6 +14,7 @@ Passo a passo:
    - `docker compose logs -f app`
 3. Acessar:
    - App/Web: `http://localhost:8080/`
+   - Link em produção não disponivel pois meus créditos na Azure acabaram
 
 Configuração de banco (via variáveis de ambiente no `docker-compose.yml`):
 - `SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/postgres`
