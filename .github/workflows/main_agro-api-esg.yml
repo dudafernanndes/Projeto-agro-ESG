@@ -27,8 +27,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build with Maven (skip tests)
-        run: mvn -B clean package -DskipTests
+      - name: Run unit tests
+        run: mvn -B test
+
+      - name: Package JAR
+        run: mvn -B package -DskipTests
 
       # DEBUG (pode remover depois)
       - name: List target files

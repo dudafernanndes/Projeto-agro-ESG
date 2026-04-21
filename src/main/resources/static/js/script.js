@@ -392,11 +392,40 @@ async function handleUpdateLot(e, id) {
 // Cultures
 // Eventos (por lote)
 let currentLotId = null;
+let currentLotFinalized = false;
+
+function setLotFinalizedUI(isFinalized) {
+    currentLotFinalized = Boolean(isFinalized);
+
+    const btn = document.getElementById('finalizeCultivationBtn');
+    const info = document.getElementById('finalizeCultivationInfo');
+    const form = document.getElementById('createEventForm');
+
+    if (btn) {
+        btn.disabled = currentLotFinalized;
+        btn.textContent = currentLotFinalized ? 'Cultivo finalizado' : 'Finalizar cultivo';
+    }
+
+    if (info) {
+        info.innerHTML = currentLotFinalized
+            ? '<small>Este lote está finalizado. Novos eventos estão bloqueados.</small>'
+            : '';
+    }
+
+    if (form) {
+        form.querySelectorAll('input, button, textarea, select').forEach(el => {
+            // Mantém o botão de finalizar fora do form
+            if (el.id === 'finalizeCultivationBtn') return;
+            el.disabled = currentLotFinalized;
+        });
+    }
+}
 
 function openLotEvents(lotId) {
     currentLotId = lotId;
     // carregar dados do lote (se possível)
     navigate('lot-detail');
+    setLotFinalizedUI(false);
     document.getElementById('lotDetailTitle').textContent = `Lote #${lotId}`;
     document.getElementById('lotDetailMeta').textContent = `ID do lote: ${lotId}`;
     document.getElementById('eventsList').innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Carregando eventos...</div>';
@@ -414,8 +443,67 @@ async function hydrateLotDetailHeader(lotId) {
 
         document.getElementById('lotDetailTitle').textContent = lot.lote || `Lote #${lotId}`;
         document.getElementById('lotDetailMeta').textContent = `${lot.cultura || ''} — Status: ${lot.status || ''}`;
+
+        const status = String(lot.status || '').toLowerCase();
+        setLotFinalizedUI(status === 'finalizado');
     } catch {
         // ignore
+    }
+}
+
+async function handleFinalizeCultivation() {
+    if (!currentLotId) return showError('Lote não selecionado');
+    if (currentLotFinalized) return;
+
+    const info = document.getElementById('finalizeCultivationInfo');
+    if (info) info.innerHTML = '<small>Finalizando cultivo...</small>';
+
+    try {
+        // Carrega dados do lote para montar o LotRequest exigido pelo backend
+        const lotRes = await fetch(apiUrl(`/lotes/${currentLotId}`));
+        if (!lotRes.ok) throw new Error('Não foi possível carregar dados do lote');
+        const list = await lotRes.json();
+        const lot = Array.isArray(list) ? list[0] : list;
+        if (!lot) throw new Error('Lote inválido');
+
+        const totalProduction = Number(lot.producao ?? 0);
+        const totalCost = Number(lot.custo ?? 0);
+        const estimatedRevenue = Number(lot.receita ?? 0);
+        const salePrice = totalProduction > 0 ? (estimatedRevenue / totalProduction) : 0;
+
+        const payload = {
+            nomeLote: lot.lote || `Lote #${currentLotId}`,
+            cultura: lot.cultura || 'N/A',
+            producaoTotal: isFinite(totalProduction) ? totalProduction : 0,
+            custoTotal: isFinite(totalCost) ? totalCost : 0,
+            precoVenda: isFinite(salePrice) ? salePrice : 0
+        };
+
+        const res = await fetch(apiUrl(`/lotes/${currentLotId}/finalizar-cultivo`), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const msg = await res.text().catch(() => '');
+            throw new Error(msg || 'Erro ao finalizar cultivo');
+        }
+
+        // Atualiza UI para bloquear novos eventos e recarrega lista
+        setLotFinalizedUI(true);
+        showSuccess('Cultivo finalizado. Lista de eventos gerada abaixo.');
+        hydrateLotDetailHeader(currentLotId);
+        await loadEvents(currentLotId);
+
+        // Rola até a lista de eventos (para deixar claro que a lista foi gerada)
+        const eventsList = document.getElementById('eventsList');
+        if (eventsList) eventsList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        if (info) info.innerHTML = '<small>Cultivo finalizado com sucesso.</small>';
+    } catch (err) {
+        if (info) info.innerHTML = '';
+        showError(err.message);
     }
 }
 
@@ -468,6 +556,7 @@ function renderEventsList(events) {
 async function handleCreateEvent(e) {
     e.preventDefault();
     if (!currentLotId) return showError('Lote não selecionado');
+    if (currentLotFinalized) return showError('Este lote está finalizado e não aceita novos eventos');
 
     const plantingDate = toIsoLocalDateTimeAtStartOfDay(document.getElementById('eventDate').value);
     const estimatedHarvestDate = toIsoLocalDateTimeAtStartOfDay(document.getElementById('eventEstimatedHarvestDate').value);

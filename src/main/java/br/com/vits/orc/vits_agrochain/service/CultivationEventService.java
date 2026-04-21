@@ -10,6 +10,8 @@ import br.com.vits.orc.vits_agrochain.repository.LotRepository;
 import br.com.vits.orc.vits_agrochain.util.DocumentGeneratorUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -34,6 +36,10 @@ public class CultivationEventService {
     public CultivationEvent addEvent(Long lotId, CultivationEventDto dto) {
         Lot lot = lotRepository.findById(lotId)
                 .orElseThrow(() -> new RuntimeException("Lote não encontrado: " + lotId));
+
+                if (lot.getLotStatus() != null && lot.getLotStatus() == 1) {
+                        throw new ResponseStatusException(HttpStatus.CONFLICT, "Lote finalizado: não é possível cadastrar novos eventos");
+                }
 
         CultivationEvent event = CultivationEvent.builder()
                 .lote(lot)
