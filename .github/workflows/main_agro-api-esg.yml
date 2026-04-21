@@ -10,6 +10,19 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
     env:
       AZURE_WEBAPP_NAME: agro-api-ESG
       JAR_NAME: vits-agrochain-0.0.1-SNAPSHOT.jar
@@ -27,8 +40,32 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Wait for Postgres
+        shell: bash
+        run: |
+          set -e
+          for i in {1..30}; do
+            (echo > /dev/tcp/postgres/5432) >/dev/null 2>&1 && echo "Postgres is up" && exit 0
+            echo "Waiting for Postgres... ($i/30)"
+            sleep 2
+          done
+          echo "Postgres did not become ready in time" >&2
+          exit 1
+
       - name: Run unit tests
         run: mvn -B test
+        env:
+          # For CI tests, use the service container DB (not Azure settings)
+          SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/postgres
+          SPRING_DATASOURCE_USERNAME: postgres
+          SPRING_DATASOURCE_PASSWORD: postgres
+
+      - name: Upload test reports (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports
 
       - name: Package JAR
         run: mvn -B package -DskipTests
